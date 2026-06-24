@@ -1,29 +1,56 @@
-name: CI WORKFLOW
-on: push
+name:  NodeJs
 
-jobs:
-  ci-job:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: checkout
-        uses: actions/checkout@v7
+on:
+  push:
+    branches: master
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+
+permissions: 
+   security-events: write
+   issues: write
+   actions: read
+   contents: read
+
+jobs: 
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [18, 20, 22]
+        exclude:
+          - os: windows-latest
+            node-version: 22
+
+    steps: 
+      - name:  Checkout Code
+        uses:  actions/checkout@v7
+
+      - name: Set up Nodejs
+        uses: actions/setup-node@v6
         with:
-          distribution: 'temurin'
-          java-version: '21'
-         
-      - name: Setup Maven
-        uses: actionctl/setup-maven-cli@v1
-        with:
-          maven_version: '3.9.16'
+          node-version: '24'
 
       - name: Build
-        run: mvn compile
+        run: npm install
 
-      - name: Test
-        run: mvn test
+      - name: test
+        run: npm test
 
-      - name: Artifact
-        run: mvn package
+
+      - name: Cache Dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.npm
+          key:  ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          
+      - name: Artifact upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: artifact-1
+          path: |
+             package*
+
+      - name: Deploy
+        run: echo "code is deployed"
